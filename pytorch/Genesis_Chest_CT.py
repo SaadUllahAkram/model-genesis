@@ -9,6 +9,7 @@ from torch import nn
 import torch
 from torchsummary import summary
 import sys
+from os.path import isfile
 from utils import *
 import unet3d
 from config import models_genesis_config
@@ -24,16 +25,18 @@ conf.display()
 
 x_train = []
 for i,fold in enumerate(tqdm(conf.train_fold)):
-    file_name = "bat_"+str(conf.scale)+"_s_"+str(conf.input_rows)+"x"+str(conf.input_cols)+"x"+str(conf.input_deps)+"_"+str(fold)+".npy"
-    s = np.load(os.path.join(conf.data, file_name))
-    x_train.extend(s)
+	file_name = "bat_"+str(conf.scale)+"_s_"+str(conf.input_rows)+"x"+str(conf.input_cols)+"x"+str(conf.input_deps)+"_"+str(fold)+".npy"
+	if isfile(os.path.join(conf.data, file_name)):
+		s = np.load(os.path.join(conf.data, file_name))
+		x_train.extend(s)
 x_train = np.expand_dims(np.array(x_train), axis=1)
 
 x_valid = []
 for i,fold in enumerate(tqdm(conf.valid_fold)):
-    file_name = "bat_"+str(conf.scale)+"_s_"+str(conf.input_rows)+"x"+str(conf.input_cols)+"x"+str(conf.input_deps)+"_"+str(fold)+".npy"
-    s = np.load(os.path.join(conf.data, file_name))
-    x_valid.extend(s)
+	file_name = "bat_"+str(conf.scale)+"_s_"+str(conf.input_rows)+"x"+str(conf.input_cols)+"x"+str(conf.input_deps)+"_"+str(fold)+".npy"
+	if isfile(os.path.join(conf.data, file_name)):
+		s = np.load(os.path.join(conf.data, file_name))
+		x_valid.extend(s)
 x_valid = np.expand_dims(np.array(x_valid), axis=1)
 
 print("x_train: {} | {:.2f} ~ {:.2f}".format(x_train.shape, np.min(x_train), np.max(x_train)))
@@ -59,7 +62,7 @@ if conf.optimizer == "sgd":
 elif conf.optimizer == "adam":
 	optimizer = torch.optim.Adam(model.parameters(), conf.lr)
 else:
-	raise
+	raise NotImplementedError
 
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(conf.patience * 0.8), gamma=0.5)
 
@@ -86,9 +89,11 @@ sys.stdout.flush()
 
 
 for epoch in range(intial_epoch,conf.nb_epoch):
+	print(f'epoch: {epoch:6d}')
 	scheduler.step(epoch)
 	model.train()
 	for iteration in range(int(x_train.shape[0]//conf.batch_size)):
+		print(f'epoch: {epoch:6d}, iteration: {iteration}')
 		image, gt = next(training_generator)
 		gt = np.repeat(gt,conf.nb_class,axis=1)
 		image,gt = torch.from_numpy(image).float().to(device), torch.from_numpy(gt).float().to(device)

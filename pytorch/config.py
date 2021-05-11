@@ -22,7 +22,7 @@ class models_genesis_config:
     # model pre-training
     verbose = 1
     weights = None
-    batch_size = 6
+    batch_size = 1
     optimizer = "sgd"
     workers = 10
     max_queue_size = workers * 4
